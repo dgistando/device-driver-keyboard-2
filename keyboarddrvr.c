@@ -1,10 +1,14 @@
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/fs.h>
-#include <asm/uaccess.h>
-
 #include <linux/init.h>
+#include <linux/module.h>
 #include <linux/device.h>
+
+#include <linux/kernel.h>
+
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+
+
+
 
 #define SUCCESS 0 				//anything other than 0 is a problem
 #define DEVICE_NAME "Dell USB Keyboard"		// have to get another keyboard to test on
@@ -45,7 +49,7 @@ static int __init chardev_init(void){
 	
 	major = register_chrdev(0, DEVICE_NAME, &fops);
 	if(major){
-		printk(KERN_ALERT "Device register failed. reason: \n", major);
+		printk(KERN_ALERT"Device register failed. reason: %d\n", major);
 		return major;
 	}
 	
@@ -116,8 +120,8 @@ copy_from_user(void *to, const void *from, ulint count )
  */
 static ssize_t device_read(struct file *fileptr, char __user *buffer, size_t size, loff_t *offset){
 	
-	int amountRead = 0;
-	int resp;
+	long amountRead = 0;
+	long resp;
 	
 	resp = copy_to_user(buffer, message, amountRead);
 
@@ -125,7 +129,7 @@ static ssize_t device_read(struct file *fileptr, char __user *buffer, size_t siz
 		printk(KERN_ALERT "Couldnt send chars to the user\n");
 		return resp;
 	}else{
-		printK(KERN_INFO "[%d] characters were sent to the user\n", amountRead);
+		printk(KERN_INFO "[%ld] characters were sent to the user\n", amountRead);
 		return amountRead;
 	}
 }
@@ -143,7 +147,7 @@ static ssize_t device_read(struct file *fileptr, char __user *buffer, size_t siz
  */
 static ssize_t device_write(struct file *fileptr, const char __user *buffer, size_t size, loff_t *offset){
 	//Not sure if this will work, or should
-	sprintf(message, "", buffer, size);
+	printk(KERN_ALERT "Device Write \n");
 
 	return 0;
 }
