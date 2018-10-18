@@ -6,46 +6,58 @@
 #include <linux/init.h>
 #include <linux/device.h>
 
-#define SUCCESS 0 			//anything other than 0 is a problem
-#define DEVICE_NAME "not sure yet" 	// have to get another keyboard to test on
-#define BUF_LEN 256 			//max length of messages
+#define SUCCESS 0 				//anything other than 0 is a problem
+#define DEVICE_NAME "Dell USB Keyboard"		// have to get another keyboard to test on
+#define BUF_LEN 256 				//max length of messages
+#define MINOR_NUMBER 73	//defined when plugged in. dynamically alloc if not.
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Daivd Gistand");
-MODULE_VERSION("0.0"); 			//its not done yet.
+MODULE_VERSION("0.1"); 			//its not done yet.
 MODULE_DESCRIPTION("Just for fun. Please dont run this on a real machine");
 
 static int major;			//number given to device driver by kernel
-static int device_open = 0;
+//static int device_open = 0;
 static char message[BUF_LEN] = {0};
 
 ///////////////////////function prototypes///////////////////////
 
 //callbacks executed when name happens. source: <linux/fs.h>
-static int device_open(struct *inode, struct *file);
-static int device_release(struct *inode, struct *file);
+static int device_open(struct inode *, struct file *);
+static int device_release(struct inode *, struct file *);
 //returns ssize_t in case err
-static ssize_t device_read(struct *file, char __user *buffer, size_t, loff_t *);
-static ssize_t device_write(struct *file, const char __user *buffer, size_t, loff_t *);
+static ssize_t device_read(struct file *, char __user *buffer, size_t, loff_t *);
+static ssize_t device_write(struct file *, const char __user *buffer, size_t, loff_t *);
 
 //connect internal events to user functions
 static struct file_operations fops = {
+	.owner = THIS_MODULE,
 	.open = device_open,
 	.read = device_read,
 	.write = device_write,
-	.release = device_release
+	.release = device_release,
 };
+
 
 //START HERE
 static int __init chardev_init(void){
-	printk(KERN_ALERT "Adding dgistando Driver");
-
+	printk(KERN_ALERT "Adding dgistando Driver\n");
+	
+	major = register_chrdev(0, DEVICE_NAME, &fops);
+	if(major){
+		printk(KERN_ALERT "Device register failed. reason: \n", major);
+		return major;
+	}
+	
+	return SUCCESS;	
 }
 
 
 static void __exit chardev_exit(void){
-
-
+//	int retVal;
+	unregister_chrdev(major, DEVICE_NAME);
+//	if(retVal)
+//		printk(KERN_ALERT "Error unregistering device. might have to restart.\n");
 }
 
 void cleanup(void){
@@ -62,8 +74,8 @@ void cleanup(void){
  *  @param inodeptr	Pointer to the inode associated with the device file
  *  @param fileptr	Pointer to the device file  
  */
-static int device_open(struct *inode inodeptr, struct *file fileptr){
-
+static int device_open(struct inode *inodeptr, struct file *fileptr){
+	printk(KERN_ALERT "The device was opened\n");
 	return 0;
 }
 
@@ -73,8 +85,8 @@ static int device_open(struct *inode inodeptr, struct *file fileptr){
  *  @param inodeptr	Pointer to the inode associated with the device file
  *  @param fileptr	Pointer to the device file 
  */
-static int device_release(struct *inode inodeptr, struct *file fileptr){
-
+static int device_release(struct inode *inodeptr, struct file *fileptr){
+	printk(KERN_ALERT "Device was released\n");
 	return 0;
 }
 
@@ -102,8 +114,20 @@ copy_from_user(void *to, const void *from, ulint count )
  *
  *  @return The number of bytes succefully read 
  */
-static ssize_t device_read(struct *file fileptr, char __user *buffer, size_t size, loff_t *offset){
+static ssize_t device_read(struct file *fileptr, char __user *buffer, size_t size, loff_t *offset){
+	
+	int amountRead = 0;
+	int resp;
+	
+	resp = copy_to_user(buffer, message, amountRead);
 
+	if(resp){//nonzero value
+		printk(KERN_ALERT "Couldnt send chars to the user\n");
+		return resp;
+	}else{
+		printK(KERN_INFO "[%d] characters were sent to the user\n", amountRead);
+		return amountRead;
+	}
 }
 
 /**
@@ -117,8 +141,11 @@ static ssize_t device_read(struct *file fileptr, char __user *buffer, size_t siz
  *
  *  @return The number of bytes succefully read 
  */
-static ssize_t device_write(struct *file fileptr, const char __user *buffer, size_t size, loff_t *offset){
+static ssize_t device_write(struct file *fileptr, const char __user *buffer, size_t size, loff_t *offset){
+	//Not sure if this will work, or should
+	sprintf(message, "", buffer, size);
 
+	return 0;
 }
 
 
