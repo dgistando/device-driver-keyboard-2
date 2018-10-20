@@ -1,19 +1,17 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
-
 #include <linux/kernel.h>
 
+//These preprocessors have to be the last ones
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 
 
-
-
 #define SUCCESS 0 				//anything other than 0 is a problem
-#define DEVICE_NAME "Dell USB Keyboard"		// have to get another keyboard to test on
+#define DEVICE_NAME "keyboarddrvr"		// have to get another keyboard to test on
 #define BUF_LEN 256 				//max length of messages
-#define MINOR_NUMBER 73	//defined when plugged in. dynamically alloc if not.
+#define MINOR_NUMBER 71	//defined when plugged in. dynamically alloc if not.
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Daivd Gistand");
@@ -47,8 +45,11 @@ static struct file_operations fops = {
 static int __init chardev_init(void){
 	printk(KERN_ALERT "Adding dgistando Driver\n");
 	
+	//might have to unregister before I can register. Like its new
+	//unregister_chrdev(13, DEVICE_NAME);	
+
 	major = register_chrdev(0, DEVICE_NAME, &fops);
-	if(major){
+	if(major < 0){
 		printk(KERN_ALERT"Device register failed. reason: %d\n", major);
 		return major;
 	}
